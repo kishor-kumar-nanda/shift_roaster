@@ -1,0 +1,36 @@
+month: 3
+year: 2026
+
+# ─── Holidays ──────────────────────────────────────────────────────
+# Add dates as YYYY-MM-DD strings
+holidays:
+  tcs:
+    - "2026-03-10"    # Holi
+    - "2026-03-30"    # Good Friday (example)
+  cigna: []
+
+# ─── Planned Leaves ───────────────────────────────────────────────
+# Employee name (EXACT match) -> list of leave dates
+planned_leaves:
+  Pradheep:
+    - "2026-03-05"
+    - "2026-03-06"
+
+# ─── CompOffs ─────────────────────────────────────────────────────
+# Employee name -> list of compoff dates
+compoffs:
+  Deepak:
+    - "2026-03-02"
+
+# ─── Force Assignments ────────────────────────────────────────────
+# Lock a specific employee to a specific shift on a specific date.
+# Use this for critical allocations you want to manually control.
+force_assignments: []
+#  - employee: "Deepak"
+#    date: "2026-03-21"
+#    shift: "A"
+
+# ─── IRM Weekend Override ─────────────────────────────────────────
+# Set to null for auto-detection (3rd weekend of month).
+# Or provide [saturday_date, sunday_date] to override.
+irm_weekend_override: null
