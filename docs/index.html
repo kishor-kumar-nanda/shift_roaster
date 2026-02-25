@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shift Roster Generator</title>
+    <meta name="description" content="Auto-generate monthly shift rosters with constraints. Export to Excel instantly.">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gradient-1: #667eea;
+            --gradient-2: #764ba2;
+            --accent: #7c3aed;
+            --accent-light: #a78bfa;
+            --surface: #1e1e2e;
+            --surface-2: #2a2a3e;
+            --surface-3: #33334d;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --border: #3f3f5f;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+
+            /* Shift colors */
+            --shift-a: #22c55e;
+            --shift-b: #3b82f6;
+            --shift-c: #eab308;
+            --shift-og: #f97316;
+            --shift-off: #64748b;
+            --shift-leave: #c084fc;
+            --shift-compoff: #a78bfa;
+        }
+
+        * { font-family: 'Inter', sans-serif; }
+
+        body {
+            background: var(--surface);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        .hero-gradient {
+            background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2));
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .hero-gradient h1 {
+            font-weight: 800;
+            font-size: 2rem;
+            letter-spacing: -0.5px;
+        }
+
+        .hero-gradient p { color: rgba(255,255,255,0.8); }
+
+        .card-custom {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            transition: border-color 0.2s;
+        }
+
+        .card-custom:hover { border-color: var(--accent-light); }
+
+        .card-custom .card-header {
+            background: var(--surface-3);
+            border-bottom: 1px solid var(--border);
+            border-radius: 12px 12px 0 0;
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+
+        .form-control, .form-select {
+            background: var(--surface-3);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+        }
+
+        .form-control:focus, .form-select:focus {
+            background: var(--surface-3);
+            border-color: var(--accent);
+            color: var(--text-primary);
+            box-shadow: 0 0 0 3px rgba(124,58,237,0.15);
+        }
+
+        .btn-generate {
+            background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2));
+            color: white;
+            border: none;
+            font-weight: 700;
+            padding: 12px 32px;
+            font-size: 1.1rem;
+            border-radius: 10px;
+            transition: all 0.3s;
+            letter-spacing: 0.3px;
+        }
+
+        .btn-generate:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102,126,234,0.4);
+            color: white;
+        }
+
+        .btn-generate:active { transform: translateY(0); }
+
+        .entry-row {
+            background: var(--surface-3);
+            padding: 10px 14px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            animation: slideIn 0.2s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .entry-row .form-control, .entry-row .form-select {
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .btn-remove {
+            background: transparent;
+            border: 1px solid var(--danger);
+            color: var(--danger);
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+        }
+
+        .btn-remove:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-add {
+            background: transparent;
+            border: 1px dashed var(--accent-light);
+            color: var(--accent-light);
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            width: 100%;
+        }
+
+        .btn-add:hover {
+            background: rgba(124,58,237,0.1);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .shift-badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 0.75rem;
+            text-align: center;
+            min-width: 35px;
+        }
+
+        .shift-A { background: var(--shift-a); color: #000; }
+        .shift-B { background: var(--shift-b); color: #fff; }
+        .shift-C { background: var(--shift-c); color: #000; }
+        .shift-OG { background: var(--shift-og); color: #000; }
+        .shift-OFF { background: var(--shift-off); color: #fff; }
+        .shift-Leave { background: var(--shift-leave); color: #000; }
+        .shift-CompOff { background: var(--shift-compoff); color: #000; }
+
+        #previewSection { display: none; }
+
+        .preview-table {
+            font-size: 0.7rem;
+            overflow-x: auto;
+        }
+
+        .preview-table table {
+            border-collapse: collapse;
+            min-width: 100%;
+        }
+
+        .preview-table th, .preview-table td {
+            padding: 4px 6px;
+            text-align: center;
+            border: 1px solid var(--border);
+            white-space: nowrap;
+        }
+
+        .preview-table th {
+            background: var(--surface-3);
+            font-weight: 700;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        .preview-table .name-col {
+            position: sticky;
+            left: 0;
+            z-index: 2;
+            background: var(--surface-2);
+            text-align: left;
+            font-weight: 600;
+            min-width: 110px;
+        }
+
+        .irm-header { background: #7030A0 !important; color: white !important; }
+        .weekend-header { background: #334155 !important; }
+
+        #statusMsg {
+            display: none;
+            animation: slideIn 0.3s ease;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 8px;
+        }
+
+        .stat-card {
+            background: var(--surface-3);
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .stat-card .stat-name { font-size: 0.75rem; color: var(--text-secondary); }
+        .stat-card .stat-value { font-size: 1.2rem; font-weight: 700; }
+
+        .section-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 1.5rem 0;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!--  HERO                                                  -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="hero-gradient">
+    <div class="container">
+        <div class="d-flex align-items-center gap-3">
+            <i class="bi bi-calendar3 fs-1"></i>
+            <div>
+                <h1 class="mb-0">Shift Roster Generator</h1>
+                <p class="mb-0 mt-1">Enter inputs → Generate optimized roster → Download Excel</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container pb-5">
+
+    <!-- STATUS MESSAGE -->
+    <div id="statusMsg" class="alert mb-4" role="alert"></div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!--  ROW 1: Month + Holidays                           -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="row g-4 mb-4">
+        <!-- Month/Year -->
+        <div class="col-md-4">
+            <div class="card card-custom">
+                <div class="card-header px-3 py-2">
+                    <i class="bi bi-calendar-month me-2"></i>Month & Year
+                </div>
+                <div class="card-body p-3">
+                    <div class="row g-2">
+                        <div class="col-7">
+                            <label class="section-label">Month</label>
+                            <select id="inputMonth" class="form-select form-select-sm">
+                                <option value="1">January</option>
+                                <option value="2">February</option>
+                                <option value="3" selected>March</option>
+                                <option value="4">April</option>
+                                <option value="5">May</option>
+                                <option value="6">June</option>
+                                <option value="7">July</option>
+                                <option value="8">August</option>
+                                <option value="9">September</option>
+                                <option value="10">October</option>
+                                <option value="11">November</option>
+                                <option value="12">December</option>
+                            </select>
+                        </div>
+                        <div class="col-5">
+                            <label class="section-label">Year</label>
+                            <input type="number" id="inputYear" class="form-control form-control-sm" value="2026" min="2024" max="2030">
+                        </div>
+                    </div>
+                    <div class="mt-3" id="irmInfo">
+                        <span class="section-label">Auto-detected IRM Weekend</span>
+                        <div id="irmDisplay" class="mt-1 fw-bold text-warning">—</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Holidays -->
+        <div class="col-md-8">
+            <div class="card card-custom">
+                <div class="card-header px-3 py-2">
+                    <i class="bi bi-calendar-x me-2"></i>Holidays
+                </div>
+                <div class="card-body p-3">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="section-label">TCS Holidays</label>
+                            <div id="tcsHolidayList"></div>
+                            <button class="btn btn-add mt-2" onclick="addHoliday('tcs')">
+                                <i class="bi bi-plus-circle me-1"></i>Add TCS Holiday
+                            </button>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="section-label">Cigna Holidays</label>
+                            <div id="cignaHolidayList"></div>
+                            <button class="btn btn-add mt-2" onclick="addHoliday('cigna')">
+                                <i class="bi bi-plus-circle me-1"></i>Add Cigna Holiday
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!--  ROW 2: Leaves + CompOffs                          -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="row g-4 mb-4">
+        <!-- Planned Leaves -->
+        <div class="col-md-6">
+            <div class="card card-custom">
+                <div class="card-header px-3 py-2">
+                    <i class="bi bi-airplane me-2"></i>Planned Leaves
+                </div>
+                <div class="card-body p-3">
+                    <div id="leaveList"></div>
+                    <button class="btn btn-add mt-2" onclick="addLeaveEntry()">
+                        <i class="bi bi-plus-circle me-1"></i>Add Leave
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- CompOffs -->
+        <div class="col-md-6">
+            <div class="card card-custom">
+                <div class="card-header px-3 py-2">
+                    <i class="bi bi-arrow-repeat me-2"></i>Comp-Offs
+                </div>
+                <div class="card-body p-3">
+                    <div id="compoffList"></div>
+                    <button class="btn btn-add mt-2" onclick="addCompoffEntry()">
+                        <i class="bi bi-plus-circle me-1"></i>Add CompOff
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!--  ROW 3: Force Assignments                          -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="card card-custom">
+                <div class="card-header px-3 py-2">
+                    <i class="bi bi-pin-angle me-2"></i>Force Assignments
+                    <span class="text-secondary fw-normal ms-2" style="font-size:0.8rem">— Lock a specific person to a specific shift on a specific date</span>
+                </div>
+                <div class="card-body p-3">
+                    <div id="forceList"></div>
+                    <button class="btn btn-add mt-2" onclick="addForceEntry()">
+                        <i class="bi bi-plus-circle me-1"></i>Add Force Assignment
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!--  GENERATE BUTTON                                   -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="text-center mb-5">
+        <button class="btn btn-generate" onclick="generateRoster()" id="btnGenerate">
+            <i class="bi bi-lightning-charge-fill me-2"></i>Generate Roster & Download Excel
+        </button>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!--  PREVIEW SECTION                                   -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div id="previewSection">
+        <div class="card card-custom mb-4">
+            <div class="card-header px-3 py-2 d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-table me-2"></i>Roster Preview</span>
+                <button class="btn btn-sm btn-outline-light" onclick="downloadExcel()">
+                    <i class="bi bi-download me-1"></i>Download Excel Again
+                </button>
+            </div>
+            <div class="card-body p-2">
+                <div class="preview-table" id="previewTable"></div>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="card card-custom">
+            <div class="card-header px-3 py-2">
+                <i class="bi bi-bar-chart me-2"></i>Shift Distribution
+            </div>
+            <div class="card-body p-3">
+                <div class="stats-grid" id="statsGrid"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- FOOTER -->
+<footer class="text-center">
+    <div class="container">
+        Built with <i class="bi bi-lightning-charge-fill text-warning"></i> by Constraint Engine — No backend needed, runs 100% in your browser
+    </div>
+</footer>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!--  SCRIPTS                                               -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  EMPLOYEE & SHIFT CONFIGURATION
+// ═══════════════════════════════════════════════════════════
+
+const SHIFT_A = 'A', SHIFT_B = 'B', SHIFT_C = 'C', SHIFT_OG = 'OG';
+const SHIFT_OFF = 'OFF', SHIFT_LEAVE = 'Leave', SHIFT_COMPOFF = 'CompOff';
+const WORKING_SHIFTS = [SHIFT_A, SHIFT_B, SHIFT_C, SHIFT_OG];
+const ALL_SHIFTS = [SHIFT_A, SHIFT_B, SHIFT_C, SHIFT_OG, SHIFT_OFF, SHIFT_LEAVE];
+
+const EMPLOYEES = [
+    { name: 'Vishnu Polkar', role: 'Senior',     allowed: [SHIFT_OG, SHIFT_OFF, SHIFT_LEAVE, SHIFT_COMPOFF] },
+    { name: 'Mallesh',       role: 'Lead',        allowed: [SHIFT_A, SHIFT_OFF, SHIFT_LEAVE, SHIFT_COMPOFF] },
+    { name: 'Pradheep',      role: 'Senior',      allowed: [SHIFT_A, SHIFT_OG, SHIFT_C, SHIFT_OFF, SHIFT_LEAVE, SHIFT_COMPOFF] },
+    { name: 'Nagendra',      role: 'Mid Senior',  allowed: [...ALL_SHIFTS, SHIFT_COMPOFF] },
+    { name: 'Deepak',        role: 'Mid Senior',  allowed: [...ALL_SHIFTS, SHIFT_COMPOFF] },
+    { name: 'Sandeep',       role: 'Mid Senior',  allowed: [...ALL_SHIFTS, SHIFT_COMPOFF] },
+    { name: 'Subbarayudu',   role: 'Mid Junior',  allowed: [...ALL_SHIFTS, SHIFT_COMPOFF] },
+    { name: 'Narendra',      role: 'Mid Junior',  allowed: [...ALL_SHIFTS, SHIFT_COMPOFF] },
+    { name: 'Alekhya',       role: 'Mid Senior',  allowed: [...ALL_SHIFTS, SHIFT_COMPOFF] },
+    { name: 'Vijay',         role: 'Junior',      allowed: [...ALL_SHIFTS, SHIFT_COMPOFF] },
+];
+
+const FIXED_EMPLOYEES = [
+    { name: 'Madhukar', role: 'Senior',     fixedShift: SHIFT_OG, weekendOff: false },
+    { name: 'Mukesh',   role: 'Senior',     fixedShift: SHIFT_OG, weekendOff: false },
+    { name: 'Archith',  role: 'Mid Junior', fixedShift: SHIFT_B,  weekendOff: true },
+];
+
+const SENIOR_ROLES = new Set(['Lead', 'Senior', 'Mid Senior']);
+const JUNIOR_ROLES = new Set(['Mid Junior', 'Junior']);
+
+const WEEKDAY_COVERAGE = { A: 3, B: 1, C: 1, OG: 1 };
+const WEEKEND_COVERAGE = { A: 2, B: 0, C: 1, OG: 0 };
+const IRM_COVERAGE     = { A: 2, B: 1, C: 1, OG: 1 };
+
+const SHIFT_TIMINGS = {
+    A:  { IST: '6:00 AM - 3:00 PM', EST: '8:30 PM - 5:30 AM' },
+    B:  { IST: '2:00 PM - 10:00 PM', EST: '4:30 AM - 1:30 PM' },
+    C:  { IST: '10:00 PM - 7:00 AM', EST: '12:30 PM - 9:30 PM' },
+    OG: { IST: '9:30 AM - 6:30 PM',  EST: '12:00 AM - 9:00 AM' },
+};
+
+const SHIFT_HEX = {
+    A: '92D050', B: '4472C4', C: 'FFFF00', OG: 'F4B084',
+    OFF: 'FFFFFF', Leave: 'D5A6BD', CompOff: 'B4A7D6',
+};
+const SHIFT_FONT_HEX = {
+    A: '000000', B: 'FFFFFF', C: '000000', OG: '000000',
+    OFF: '808080', Leave: '000000', CompOff: '000000',
+};
+
+const EMPLOYEE_NAMES = EMPLOYEES.map(e => e.name);
+const MAX_NIGHT_PER_MONTH = 10;
+
+// ═══════════════════════════════════════════════════════════
+//  CALENDAR UTILITIES
+// ═══════════════════════════════════════════════════════════
+
+function getMonthDates(year, month) {
+    const days = new Date(year, month, 0).getDate();
+    const dates = [];
+    for (let d = 1; d <= days; d++) dates.push(new Date(year, month - 1, d));
+    return dates;
+}
+
+function isWeekend(d) { return d.getDay() === 0 || d.getDay() === 6; }
+
+function getIRMWeekend(year, month) {
+    const dates = getMonthDates(year, month);
+    const sats = dates.filter(d => d.getDay() === 6);
+    const irmSat = sats.length >= 3 ? sats[2] : sats[sats.length - 1];
+    const irmSun = new Date(irmSat); irmSun.setDate(irmSun.getDate() + 1);
+    return [irmSat, irmSun];
+}
+
+function dateKey(d) {
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function formatDateHeader(d) {
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${d.getDate()}-${months[d.getMonth()]}`;
+}
+
+function dayName(d) {
+    return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
+}
+
+// ═══════════════════════════════════════════════════════════
+//  FORM HELPERS
+// ═══════════════════════════════════════════════════════════
+
+function empOptions() {
+    return EMPLOYEE_NAMES.map(n => `<option value="${n}">${n}</option>`).join('');
+}
+
+function addHoliday(type) {
+    const list = document.getElementById(type + 'HolidayList');
+    const div = document.createElement('div');
+    div.className = 'entry-row';
+    div.innerHTML = `
+        <input type="date" class="form-control form-control-sm holiday-date" data-type="${type}">
+        <button class="btn btn-remove" onclick="this.parentElement.remove()"><i class="bi bi-x"></i></button>
+    `;
+    list.appendChild(div);
+}
+
+function addLeaveEntry() {
+    const list = document.getElementById('leaveList');
+    const div = document.createElement('div');
+    div.className = 'entry-row';
+    div.innerHTML = `
+        <select class="form-select form-select-sm leave-name">${empOptions()}</select>
+        <input type="date" class="form-control form-control-sm leave-date">
+        <button class="btn btn-remove" onclick="this.parentElement.remove()"><i class="bi bi-x"></i></button>
+    `;
+    list.appendChild(div);
+}
+
+function addCompoffEntry() {
+    const list = document.getElementById('compoffList');
+    const div = document.createElement('div');
+    div.className = 'entry-row';
+    div.innerHTML = `
+        <select class="form-select form-select-sm compoff-name">${empOptions()}</select>
+        <input type="date" class="form-control form-control-sm compoff-date">
+        <button class="btn btn-remove" onclick="this.parentElement.remove()"><i class="bi bi-x"></i></button>
+    `;
+    list.appendChild(div);
+}
+
+function addForceEntry() {
+    const list = document.getElementById('forceList');
+    const div = document.createElement('div');
+    div.className = 'entry-row';
+    div.innerHTML = `
+        <select class="form-select form-select-sm force-name">${empOptions()}</select>
+        <input type="date" class="form-control form-control-sm force-date">
+        <select class="form-select form-select-sm force-shift" style="max-width:90px">
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+            <option value="OG">OG</option>
+        </select>
+        <button class="btn btn-remove" onclick="this.parentElement.remove()"><i class="bi bi-x"></i></button>
+    `;
+    list.appendChild(div);
+}
+
+function readFormInputs() {
+    const month = parseInt(document.getElementById('inputMonth').value);
+    const year = parseInt(document.getElementById('inputYear').value);
+
+    const tcsHolidays = new Set();
+    document.querySelectorAll('.holiday-date[data-type="tcs"]').forEach(el => {
+        if (el.value) tcsHolidays.add(el.value);
+    });
+
+    const cignaHolidays = new Set();
+    document.querySelectorAll('.holiday-date[data-type="cigna"]').forEach(el => {
+        if (el.value) cignaHolidays.add(el.value);
+    });
+
+    const plannedLeaves = {};
+    document.querySelectorAll('#leaveList .entry-row').forEach(row => {
+        const name = row.querySelector('.leave-name').value;
+        const date = row.querySelector('.leave-date').value;
+        if (name && date) {
+            if (!plannedLeaves[name]) plannedLeaves[name] = [];
+            plannedLeaves[name].push(date);
+        }
+    });
+
+    const compoffs = {};
+    document.querySelectorAll('#compoffList .entry-row').forEach(row => {
+        const name = row.querySelector('.compoff-name').value;
+        const date = row.querySelector('.compoff-date').value;
+        if (name && date) {
+            if (!compoffs[name]) compoffs[name] = [];
+            compoffs[name].push(date);
+        }
+    });
+
+    const forceAssignments = [];
+    document.querySelectorAll('#forceList .entry-row').forEach(row => {
+        const name = row.querySelector('.force-name').value;
+        const date = row.querySelector('.force-date').value;
+        const shift = row.querySelector('.force-shift').value;
+        if (name && date && shift) forceAssignments.push({ name, date, shift });
+    });
+
+    return { month, year, tcsHolidays, cignaHolidays, plannedLeaves, compoffs, forceAssignments };
+}
+
+// ═══════════════════════════════════════════════════════════
+//  GREEDY CONSTRAINT SOLVER
+// ═══════════════════════════════════════════════════════════
+
+function solveRoster(config) {
+    const { month, year, tcsHolidays, cignaHolidays, plannedLeaves, compoffs, forceAssignments } = config;
+    const dates = getMonthDates(year, month);
+    const numDays = dates.length;
+    const [irmSat, irmSun] = getIRMWeekend(year, month);
+    const irmKeys = new Set([dateKey(irmSat), dateKey(irmSun)]);
+
+    // Initialize roster grid: roster[empIdx][dayIdx] = shift label
+    const numEmp = EMPLOYEES.length;
+    const roster = Array.from({ length: numEmp }, () => Array(numDays).fill(null));
+
+    // Pre-assignment index: { dateKey -> empName -> shift }
+    const preAssigned = {};
+    for (let d = 0; d < numDays; d++) {
+        const dk = dateKey(dates[d]);
+        preAssigned[dk] = {};
+    }
+
+    // Step 1: Lock leaves
+    for (const [name, leaveDates] of Object.entries(plannedLeaves)) {
+        const eIdx = EMPLOYEES.findIndex(e => e.name === name);
+        if (eIdx < 0) continue;
+        for (const ld of leaveDates) {
+            const dIdx = dates.findIndex(d => dateKey(d) === ld);
+            if (dIdx >= 0) roster[eIdx][dIdx] = SHIFT_LEAVE;
+        }
+    }
+
+    // Step 2: Lock compoffs
+    for (const [name, coDates] of Object.entries(compoffs)) {
+        const eIdx = EMPLOYEES.findIndex(e => e.name === name);
+        if (eIdx < 0) continue;
+        for (const cd of coDates) {
+            const dIdx = dates.findIndex(d => dateKey(d) === cd);
+            if (dIdx >= 0) roster[eIdx][dIdx] = SHIFT_COMPOFF;
+        }
+    }
+
+    // Step 3: Lock force assignments
+    for (const fa of forceAssignments) {
+        const eIdx = EMPLOYEES.findIndex(e => e.name === fa.name);
+        if (eIdx < 0) continue;
+        const dIdx = dates.findIndex(d => dateKey(d) === fa.date);
+        if (dIdx >= 0) roster[eIdx][dIdx] = fa.shift;
+    }
+
+    // Step 4: Greedy fill day by day
+    for (let d = 0; d < numDays; d++) {
+        const dt = dates[d];
+        const dk = dateKey(dt);
+        const weekend = isWeekend(dt);
+        const isIRM = irmKeys.has(dk);
+
+        // Determine coverage needed
+        const coverage = isIRM ? { ...IRM_COVERAGE } : weekend ? { ...WEEKEND_COVERAGE } : { ...WEEKDAY_COVERAGE };
+
+        // Count current coverage from pre-assigned
+        const currentCoverage = { A: 0, B: 0, C: 0, OG: 0 };
+        for (let e = 0; e < numEmp; e++) {
+            if (roster[e][d] && WORKING_SHIFTS.includes(roster[e][d])) {
+                currentCoverage[roster[e][d]]++;
+            }
+        }
+
+        // Track night shifts per employee
+        const nightCount = Array(numEmp).fill(0);
+        for (let e = 0; e < numEmp; e++) {
+            for (let dd = 0; dd < numDays; dd++) {
+                if (roster[e][dd] === SHIFT_C) nightCount[e]++;
+            }
+        }
+
+        // Get unassigned employees for this day, shuffled for fairness
+        let unassigned = [];
+        for (let e = 0; e < numEmp; e++) {
+            if (roster[e][d] === null) unassigned.push(e);
+        }
+        // Shuffle to avoid always assigning the same order
+        unassigned = unassigned.sort(() => Math.random() - 0.5);
+
+        // Priority: fill deficit shifts first (C > B > OG > A order for priority)
+        const shiftPriority = [SHIFT_C, SHIFT_B, SHIFT_OG, SHIFT_A];
+
+        for (const shift of shiftPriority) {
+            const needed = (coverage[shift] || 0) - currentCoverage[shift];
+            if (needed <= 0) continue;
+
+            let filled = 0;
+            for (let i = 0; i < unassigned.length && filled < needed; i++) {
+                const e = unassigned[i];
+                const emp = EMPLOYEES[e];
+
+                // Check allowed
+                if (!emp.allowed.includes(shift)) continue;
+
+                // Night shift cap
+                if (shift === SHIFT_C && nightCount[e] >= MAX_NIGHT_PER_MONTH) continue;
+
+                // C→A block: if yesterday was C, can't do A today
+                if (shift === SHIFT_A && d > 0 && roster[e][d - 1] === SHIFT_C) continue;
+
+                // Mentorship check for juniors
+                if (JUNIOR_ROLES.has(emp.role) && [SHIFT_A, SHIFT_B, SHIFT_C, SHIFT_OG].includes(shift)) {
+                    // Check if at least 1 senior is already on this shift
+                    let seniorOnShift = false;
+                    for (let s = 0; s < numEmp; s++) {
+                        if (s !== e && roster[s][d] === shift && SENIOR_ROLES.has(EMPLOYEES[s].role)) {
+                            seniorOnShift = true;
+                            break;
+                        }
+                    }
+                    // If no senior yet, skip this junior and try to place a senior first
+                    if (!seniorOnShift) continue;
+                }
+
+                roster[e][d] = shift;
+                currentCoverage[shift]++;
+                if (shift === SHIFT_C) nightCount[e]++;
+                unassigned.splice(i, 1);
+                i--;
+                filled++;
+            }
+
+            // If still not enough and juniors were skipped, try placing senior first then junior
+            if (filled < needed) {
+                for (let i = 0; i < unassigned.length && filled < needed; i++) {
+                    const e = unassigned[i];
+                    const emp = EMPLOYEES[e];
+                    if (!emp.allowed.includes(shift)) continue;
+                    if (shift === SHIFT_C && nightCount[e] >= MAX_NIGHT_PER_MONTH) continue;
+                    if (shift === SHIFT_A && d > 0 && roster[e][d - 1] === SHIFT_C) continue;
+
+                    roster[e][d] = shift;
+                    currentCoverage[shift]++;
+                    if (shift === SHIFT_C) nightCount[e]++;
+                    unassigned.splice(i, 1);
+                    i--;
+                    filled++;
+                }
+            }
+        }
+
+        // Remaining unassigned: try to give extra coverage or OFF
+        // Check how many consecutive working days each remaining person has
+        for (const e of [...unassigned]) {
+            const emp = EMPLOYEES[e];
+
+            // Check if needs OFF (consecutive working days >= 8)
+            let consecutive = 0;
+            for (let dd = d - 1; dd >= 0; dd--) {
+                if (roster[e][dd] && WORKING_SHIFTS.includes(roster[e][dd])) consecutive++;
+                else break;
+            }
+
+            if (consecutive >= 8 && emp.allowed.includes(SHIFT_OFF)) {
+                roster[e][d] = SHIFT_OFF;
+                continue;
+            }
+
+            // C→A block
+            if (d > 0 && roster[e][d - 1] === SHIFT_C) {
+                // Can't do A, try other shifts
+                const options = emp.allowed.filter(s =>
+                    WORKING_SHIFTS.includes(s) && s !== SHIFT_A &&
+                    !(s === SHIFT_C && nightCount[e] >= MAX_NIGHT_PER_MONTH)
+                );
+                if (options.length > 0) {
+                    roster[e][d] = options[Math.floor(Math.random() * options.length)];
+                } else {
+                    roster[e][d] = SHIFT_OFF;
+                }
+                continue;
+            }
+
+            // Fill with a working shift that helps coverage or is allowed
+            const options = emp.allowed.filter(s =>
+                WORKING_SHIFTS.includes(s) &&
+                !(s === SHIFT_C && nightCount[e] >= MAX_NIGHT_PER_MONTH)
+            );
+            if (options.length > 0) {
+                // Prefer shifts with lower coverage
+                options.sort((a, b) => (currentCoverage[a] || 0) - (currentCoverage[b] || 0));
+                roster[e][d] = options[0];
+                currentCoverage[options[0]]++;
+            } else {
+                roster[e][d] = SHIFT_OFF;
+            }
+        }
+    }
+
+    // Post-pass: inject OFFs for fairness (ensure ~4 OFFs per month per person)
+    for (let e = 0; e < numEmp; e++) {
+        let offCount = 0;
+        for (let d = 0; d < numDays; d++) {
+            if (!WORKING_SHIFTS.includes(roster[e][d])) offCount++;
+        }
+
+        const targetOffs = 4;
+        if (offCount < targetOffs) {
+            // Find best days to convert to OFF (weekends preferred, non-critical)
+            const candidates = [];
+            for (let d = 0; d < numDays; d++) {
+                if (!WORKING_SHIFTS.includes(roster[e][d])) continue;
+                if (irmKeys.has(dateKey(dates[d]))) continue; // Don't touch IRM days
+
+                // Check if removing this person still meets coverage
+                const shift = roster[e][d];
+                let shiftCount = 0;
+                for (let e2 = 0; e2 < numEmp; e2++) {
+                    if (roster[e2][d] === shift) shiftCount++;
+                }
+                const dt = dates[d];
+                const cov = irmKeys.has(dateKey(dt)) ? IRM_COVERAGE : isWeekend(dt) ? WEEKEND_COVERAGE : WEEKDAY_COVERAGE;
+                const minNeeded = cov[shift] || 0;
+
+                if (shiftCount > minNeeded) {
+                    candidates.push({ d, priority: isWeekend(dates[d]) ? 0 : 1 });
+                }
+            }
+
+            candidates.sort((a, b) => a.priority - b.priority);
+            const toConvert = Math.min(targetOffs - offCount, candidates.length);
+            for (let i = 0; i < toConvert; i++) {
+                roster[e][candidates[i].d] = SHIFT_LEAVE;
+            }
+        }
+    }
+
+    return { roster, dates, irmSat, irmSun, tcsHolidays, cignaHolidays };
+}
+
+// ═══════════════════════════════════════════════════════════
+//  EXCEL WRITER (SheetJS)
+// ═══════════════════════════════════════════════════════════
+
+let lastResult = null;
+let lastConfig = null;
+
+function buildWorkbook(result, config) {
+    const { roster, dates, irmSat, irmSun, tcsHolidays, cignaHolidays } = result;
+    const numDays = dates.length;
+    const irmKeys = new Set([dateKey(irmSat), dateKey(irmSun)]);
+    const wb = XLSX.utils.book_new();
+    const ws = {};
+    const merges = [];
+    const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const sheetName = `${monthNames[config.month - 1]} ${config.year}`;
+
+    // Helper to set cell with style
+    function setCell(r, c, val, bg, fg, bold) {
+        const addr = XLSX.utils.encode_cell({ r, c });
+        ws[addr] = {
+            v: val, t: 's',
+            s: {
+                fill: bg ? { fgColor: { rgb: bg } } : undefined,
+                font: { name: 'Calibri', sz: 10, bold: !!bold, color: fg ? { rgb: fg } : undefined },
+                alignment: { horizontal: 'center', vertical: 'center' },
+                border: {
+                    top: { style: 'thin', color: { rgb: '999999' } },
+                    bottom: { style: 'thin', color: { rgb: '999999' } },
+                    left: { style: 'thin', color: { rgb: '999999' } },
+                    right: { style: 'thin', color: { rgb: '999999' } },
+                }
+            }
+        };
+    }
+
+    // Row 0: Date headers
+    setCell(0, 0, 'Name', '4472C4', 'FFFFFF', true);
+    for (let d = 0; d < numDays; d++) {
+        const dt = dates[d];
+        const dk = dateKey(dt);
+        let bg = '4472C4', fg = 'FFFFFF';
+        if (irmKeys.has(dk)) { bg = '7030A0'; }
+        else if (tcsHolidays.has(dk)) { bg = 'FF6666'; }
+        else if (cignaHolidays.has(dk)) { bg = '66B2FF'; }
+        else if (isWeekend(dt)) { bg = 'D9E2F3'; fg = '000000'; }
+        setCell(0, d + 1, formatDateHeader(dt), bg, fg, true);
+    }
+
+    // Row 1: Day names
+    setCell(1, 0, 'Day', '4472C4', 'FFFFFF', true);
+    for (let d = 0; d < numDays; d++) {
+        const dt = dates[d];
+        const dk = dateKey(dt);
+        let bg = null, fg = '000000';
+        if (irmKeys.has(dk)) { bg = '7030A0'; fg = 'FFFFFF'; }
+        else if (isWeekend(dt)) { bg = 'D9E2F3'; }
+        setCell(1, d + 1, dayName(dt), bg, fg, true);
+    }
+
+    // Row 2: IRM marker
+    setCell(2, 0, '', null, null, false);
+    for (let d = 0; d < numDays; d++) {
+        if (irmKeys.has(dateKey(dates[d]))) {
+            setCell(2, d + 1, 'IRM', '7030A0', 'FFFFFF', true);
+        } else {
+            setCell(2, d + 1, '', null, null, false);
+        }
+    }
+
+    // Fixed employees (rows 3-5)
+    let row = 3;
+    for (const fe of FIXED_EMPLOYEES) {
+        setCell(row, 0, fe.name, null, null, true);
+        for (let d = 0; d < numDays; d++) {
+            const label = (fe.weekendOff && isWeekend(dates[d])) ? SHIFT_OFF : fe.fixedShift;
+            setCell(row, d + 1, label, SHIFT_HEX[label], SHIFT_FONT_HEX[label], true);
+        }
+        row++;
+    }
+
+    // Solver employees
+    for (let e = 0; e < EMPLOYEES.length; e++) {
+        setCell(row, 0, EMPLOYEES[e].name, null, null, true);
+        for (let d = 0; d < numDays; d++) {
+            const label = roster[e][d] || SHIFT_OFF;
+            setCell(row, d + 1, label, SHIFT_HEX[label], SHIFT_FONT_HEX[label], true);
+        }
+        row++;
+    }
+
+    // Empty row
+    row++;
+
+    // Summary counts
+    const summaryShifts = ['A', 'B', 'OG', 'C'];
+    const summaryColors = { A: '92D050', B: '4472C4', OG: 'F4B084', C: 'FFFF00' };
+    for (const sh of summaryShifts) {
+        setCell(row, 0, sh, summaryColors[sh], '000000', true);
+        for (let d = 0; d < numDays; d++) {
+            let count = 0;
+            // Solver employees
+            for (let e = 0; e < EMPLOYEES.length; e++) {
+                if (roster[e][d] === sh) count++;
+            }
+            // Fixed employees
+            for (const fe of FIXED_EMPLOYEES) {
+                const feLabel = (fe.weekendOff && isWeekend(dates[d])) ? SHIFT_OFF : fe.fixedShift;
+                if (feLabel === sh) count++;
+            }
+            setCell(row, d + 1, String(count), summaryColors[sh], '000000', true);
+        }
+        row++;
+    }
+
+    // Legend
+    row += 2;
+    setCell(row, 0, 'TH', 'FF6666', 'FFFFFF', true);
+    setCell(row, 1, 'TCS Holiday', null, null, false);
+    row++;
+    setCell(row, 0, 'CH', '66B2FF', 'FFFFFF', true);
+    setCell(row, 1, 'Cigna Holiday', null, null, false);
+    row += 2;
+
+    for (const [sh, times] of Object.entries(SHIFT_TIMINGS)) {
+        setCell(row, 0, sh, SHIFT_HEX[sh], SHIFT_FONT_HEX[sh], true);
+        setCell(row, 1, `${sh} Shift (${times.IST} IST) = (${times.EST} EST)`, null, null, false);
+        row++;
+    }
+
+    // Set range
+    ws['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: row, c: numDays } });
+
+    // Column widths
+    const colWidths = [{ wch: 16 }];
+    for (let d = 0; d < numDays; d++) colWidths.push({ wch: 7 });
+    ws['!cols'] = colWidths;
+
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    return wb;
+}
+
+function downloadExcel() {
+    if (!lastResult || !lastConfig) return;
+    const wb = buildWorkbook(lastResult, lastConfig);
+    const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const filename = `Roster_${monthNames[lastConfig.month - 1]}_${lastConfig.year}.xlsx`;
+    XLSX.writeFile(wb, filename);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  PREVIEW RENDERER
+// ═══════════════════════════════════════════════════════════
+
+function renderPreview(result) {
+    const { roster, dates, irmSat, irmSun, tcsHolidays, cignaHolidays } = result;
+    const numDays = dates.length;
+    const irmKeys = new Set([dateKey(irmSat), dateKey(irmSun)]);
+
+    let html = '<table>';
+
+    // Header row 1: dates
+    html += '<tr><th class="name-col">Name</th>';
+    for (let d = 0; d < numDays; d++) {
+        const dt = dates[d];
+        const dk = dateKey(dt);
+        let cls = '';
+        if (irmKeys.has(dk)) cls = 'irm-header';
+        else if (isWeekend(dt)) cls = 'weekend-header';
+        html += `<th class="${cls}">${formatDateHeader(dt)}</th>`;
+    }
+    html += '</tr>';
+
+    // Header row 2: day names
+    html += '<tr><th class="name-col">Day</th>';
+    for (let d = 0; d < numDays; d++) {
+        const dt = dates[d];
+        const dk = dateKey(dt);
+        let cls = '';
+        if (irmKeys.has(dk)) cls = 'irm-header';
+        else if (isWeekend(dt)) cls = 'weekend-header';
+        html += `<th class="${cls}">${dayName(dt)}</th>`;
+    }
+    html += '</tr>';
+
+    // Fixed employees
+    for (const fe of FIXED_EMPLOYEES) {
+        html += `<tr><td class="name-col">${fe.name}</td>`;
+        for (let d = 0; d < numDays; d++) {
+            const label = (fe.weekendOff && isWeekend(dates[d])) ? SHIFT_OFF : fe.fixedShift;
+            html += `<td><span class="shift-badge shift-${label}">${label}</span></td>`;
+        }
+        html += '</tr>';
+    }
+
+    // Solver employees
+    for (let e = 0; e < EMPLOYEES.length; e++) {
+        html += `<tr><td class="name-col">${EMPLOYEES[e].name}</td>`;
+        for (let d = 0; d < numDays; d++) {
+            const label = roster[e][d] || SHIFT_OFF;
+            html += `<td><span class="shift-badge shift-${label}">${label}</span></td>`;
+        }
+        html += '</tr>';
+    }
+
+    html += '</table>';
+    document.getElementById('previewTable').innerHTML = html;
+
+    // Stats
+    const statsHtml = [];
+    for (let e = 0; e < EMPLOYEES.length; e++) {
+        const counts = {};
+        for (let d = 0; d < numDays; d++) {
+            const s = roster[e][d] || SHIFT_OFF;
+            counts[s] = (counts[s] || 0) + 1;
+        }
+        let badges = '';
+        for (const sh of [SHIFT_A, SHIFT_B, SHIFT_C, SHIFT_OG, SHIFT_OFF, SHIFT_LEAVE, SHIFT_COMPOFF]) {
+            if (counts[sh]) badges += `<span class="shift-badge shift-${sh} me-1">${sh}:${counts[sh]}</span>`;
+        }
+        statsHtml.push(`
+            <div class="stat-card">
+                <div class="stat-name">${EMPLOYEES[e].name}</div>
+                <div class="mt-1">${badges}</div>
+            </div>
+        `);
+    }
+    document.getElementById('statsGrid').innerHTML = statsHtml.join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  MAIN GENERATE FUNCTION
+// ═══════════════════════════════════════════════════════════
+
+function generateRoster() {
+    const btn = document.getElementById('btnGenerate');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generating...';
+
+    const statusMsg = document.getElementById('statusMsg');
+    statusMsg.style.display = 'none';
+
+    setTimeout(() => {
+        try {
+            const config = readFormInputs();
+            lastConfig = config;
+
+            // Solve
+            const result = solveRoster(config);
+            lastResult = result;
+
+            // Render preview
+            renderPreview(result);
+            document.getElementById('previewSection').style.display = 'block';
+
+            // Auto-download Excel
+            downloadExcel();
+
+            statusMsg.className = 'alert alert-success mb-4';
+            statusMsg.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i><strong>Roster generated and downloaded!</strong> Scroll down to see the preview.';
+            statusMsg.style.display = 'block';
+
+        } catch (err) {
+            statusMsg.className = 'alert alert-danger mb-4';
+            statusMsg.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-2"></i><strong>Error:</strong> ${err.message}`;
+            statusMsg.style.display = 'block';
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-lightning-charge-fill me-2"></i>Generate Roster & Download Excel';
+        }
+    }, 100);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  INIT: Auto-compute IRM on month/year change
+// ═══════════════════════════════════════════════════════════
+
+function updateIRM() {
+    const month = parseInt(document.getElementById('inputMonth').value);
+    const year = parseInt(document.getElementById('inputYear').value);
+    const [sat, sun] = getIRMWeekend(year, month);
+    document.getElementById('irmDisplay').textContent =
+        `${formatDateHeader(sat)} (Sat) — ${formatDateHeader(sun)} (Sun)`;
+}
+
+document.getElementById('inputMonth').addEventListener('change', updateIRM);
+document.getElementById('inputYear').addEventListener('change', updateIRM);
+updateIRM();
+</script>
+
+</body>
+</html>
